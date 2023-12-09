@@ -1,0 +1,30 @@
+import tensorflow as tf
+from tensorflow.keras.preprocessing.text import Tokenizer
+from tensorflow.keras.preprocessing.sequence import pad_sequences
+
+# 假設對話存儲在一個文本文件中，每行是一句對話
+with open("conversation_data.txt", "r", encoding="utf-8") as file:
+    conversations = file.readlines()
+
+# 初始化 Tokenizer
+tokenizer = Tokenizer(oov_token="<OOV>")
+tokenizer.fit_on_texts(conversations)
+
+# 將文本轉換為數字序列
+sequences = tokenizer.texts_to_sequences(conversations)
+
+# 使用 pad_sequences 將序列填充為相同的長度
+padded_sequences = pad_sequences(sequences, padding="post", truncating="post")
+
+# 定義模型
+model = tf.keras.Sequential([
+    tf.keras.layers.Embedding(input_dim=len(tokenizer.word_index) + 1, output_dim=128),
+    tf.keras.layers.LSTM(128),
+    tf.keras.layers.Dense(len(tokenizer.word_index) + 1, activation="softmax")
+])
+
+# 編譯模型
+model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
+
+# 訓練模型
+model.fit(padded_sequences[:, :-1], padded_sequences[:, 1:], epochs=10)
